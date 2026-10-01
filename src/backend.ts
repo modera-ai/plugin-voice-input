@@ -1,12 +1,48 @@
 import { spawn } from "node:child_process";
 import { access, mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { Readable } from "node:stream";
+import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createWriteStream } from "node:fs";
 
 const revision = "2365bae";
 const modelUrl = `https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/${revision}/`;
+export interface InstallProgress {
+  stage: "environment" | "dependencies" | "download" | "verify";
+  file?: string;
+  completed?: number;
+  total?: number;
+}
+
+export async function downloadModelFile(url: string, target: string, minimum: number, signal: AbortSignal, report: (progress: Pick<InstallProgress, "completed" | "total">) => void): Promise<void> {
+  const temporary = target + ".partial";
+  try {
+    const response = await fetch(url, { signal });
+    if (!response.ok || !response.body) throw new Error(`Model download failed: HTTP ${response.status}`);
+    const length = Number(response.headers.get("content-length"));
+    const total = Number.isSafeInteger(length) && length > 0 && !response.headers.get("content-encoding") ? length : undefined;
+    let completed = 0, lastUpdate = 0;
+    const update = () => report({ completed, ...(total === undefined ? {} : { total }) });
+    update();
+    const counter = new Transform({ transform(chunk: Buffer, _encoding, next) {
+      completed += chunk.length;
+      if (completed > 300 * 1024 * 1024) { next(new Error("Model download exceeded size limit")); return; }
+      if (Date.now() - lastUpdate >= 250) { lastUpdate = Date.now(); update(); }
+      next(null, chunk);
+    } });
+    await pipeline(Readable.fromWeb(response.body as never), counter, createWriteStream(temporary), { signal });
+    if (completed <= minimum || (total !== undefined && completed !== total)) throw new Error("Incomplete model download");
+    await rename(temporary, target);
+    update();
+  } finally { await rm(temporary, { force: true }); }
+}
+
+export function installationError(cause: unknown): string {
+  const error = cause as { message?: string; cause?: { message?: string; code?: string }; name?: string } | null;
+  const message = error?.message ?? String(cause);
+  const detail = error?.cause?.code ?? error?.cause?.message;
+  return (detail && !message.includes(detail) ? `${message} (${detail})` : message).slice(0, 3500);
+}
 const recognitionScript = String.raw`
 import sys,json,base64,io,wave
 import numpy as np
@@ -59,25 +95,22 @@ export class SpeechBackend {
       return (await stat(join(this.root, "model.int8.onnx"))).size > 200000000 && (await stat(join(this.root, "tokens.txt"))).size > 100000;
     } catch { return false; }
   }
-  async install(python: string, signal: AbortSignal, source = "huggingface.co") {
+  async install(python: string, signal: AbortSignal, source = "huggingface.co", report: (progress: InstallProgress) => void = () => {}) {
     if (!["huggingface.co", "hf-mirror.com"].includes(source)) throw new Error("Unsupported model source");
     await mkdir(this.root, { recursive: true });
     await rm(join(this.root, "ready"), { force: true });
+    report({ stage: "environment" });
     await runProcess(python, ["-m", "venv", join(this.root, "venv")], signal);
+    report({ stage: "dependencies" });
     await runProcess(this.python, ["-m", "pip", "install", "--disable-pip-version-check", "sherpa-onnx==1.13.8", "numpy>=1.26,<3"], signal);
     for (const name of ["model.int8.onnx", "tokens.txt"]) {
       const target = join(this.root, name);
       const minimum = name === "tokens.txt" ? 100000 : 200000000;
       if (await stat(target).then(info => info.size > minimum, () => false)) continue;
-      const temporary = target + ".partial";
-      try {
-        const response = await fetch(modelUrl.replace("huggingface.co", source) + name, { signal });
-        if (!response.ok || !response.body) throw new Error(`Model download failed: HTTP ${response.status}`);
-        await pipeline(Readable.fromWeb(response.body as never), createWriteStream(temporary), { signal });
-        if ((await stat(temporary)).size <= minimum) throw new Error("Incomplete model download");
-        await rename(temporary, target);
-      } finally { await rm(temporary, { force: true }); }
+      report({ stage: "download", file: name, completed: 0 });
+      await downloadModelFile(modelUrl.replace("huggingface.co", source) + name, target, minimum, signal, progress => report({ stage: "download", file: name, ...progress }));
     }
+    report({ stage: "verify" });
     await runProcess(this.python, ["-c", "import sherpa_onnx, numpy"], signal);
     signal.throwIfAborted();
     await writeFile(join(this.root, "ready"), revision, { signal });

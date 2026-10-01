@@ -7,6 +7,10 @@ installs sherpa-onnx 1.13.8, and downloads the pinned SenseVoice int8 model (abo
 239 MB) and tokens. Downloads require access to PyPI and Hugging Face. Failed
 installations can be retried with the same button; incomplete downloads are removed.
 The model download source can be changed to hf-mirror.com in plugin settings.
+Preparation shows environment/runtime stages and the current file's download
+percentage and byte counts. Servers without a content length show downloaded
+bytes with an indeterminate spinner. Errors stay visible with a retry action;
+retries preserve already completed model files.
 
 After installation, click the microphone, speak, and click stop. Recognition runs
 offline on CPU and appends text to the draft without sending a message. Cancel
@@ -28,6 +32,9 @@ Model: https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue
   own plugin, and optionally a declared `prepareAction`. Views return typed
   `audioInput` readiness, preparation and error state. The host renders controls and never grants guest iframe
   microphone or composer DOM access.
+- Views can provide `audioInput.progress` with a stage label, optional completed
+  bytes and an optional total. The host shows bounded progress feedback without
+  knowing the plugin's installer or download implementation.
 - The host appends returned `insertText` edits to the original draft, checks its
   lifetime revision, and notifies draft subscribers. Existing text is preserved.
 - Plugin activation, project availability, declared permissions and revocation
