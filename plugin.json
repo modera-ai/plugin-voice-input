@@ -1,0 +1,19 @@
+{
+  "apiVersion": 1,
+  "id": "modera.voice-input",
+  "name": "Local Voice Input",
+  "version": "0.1.0",
+  "description": "Offline speech recognition with an on-demand SenseVoice CPU model.",
+  "main": "dist/index.cjs",
+  "category": "productivity",
+  "icon": "mic",
+  "permissions": ["audio.record", "process.spawn", "network.fetch", "storage.read", "storage.write"],
+  "extensions": ["conversation.composer"],
+  "locales": { "zh-CN": { "name": "本地语音输入", "description": "按需安装 SenseVoice CPU 模型，离线识别并追加到输入框。" } },
+  "config": {
+    "modelSource": { "type": "enum", "title": "Model download source", "default": "huggingface.co", "options": ["huggingface.co", "hf-mirror.com"], "locales": { "zh-CN": { "title": "模型下载源" } } },
+    "pythonExecutable": { "type": "string", "title": "Python executable (3.10+)", "default": "python", "maxLength": 1000, "locales": { "zh-CN": { "title": "Python 可执行文件（3.10+）" } } },
+    "language": { "type": "enum", "title": "Recognition language", "default": "auto", "options": ["auto", "zh", "en", "yue", "ja", "ko"], "locales": { "zh-CN": { "title": "识别语言" } } },
+    "threads": { "type": "number", "title": "CPU threads", "default": 2, "minimum": 1, "maximum": 8, "locales": { "zh-CN": { "title": "CPU 线程数" } } }
+  }
+}
