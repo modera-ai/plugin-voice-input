@@ -7,13 +7,112 @@
   "main": "dist/index.cjs",
   "category": "productivity",
   "icon": "mic",
-  "permissions": ["audio.record", "process.spawn", "network.fetch", "storage.read", "storage.write"],
+  "permissions": [
+    "audio.record",
+    "process.spawn",
+    "network.fetch",
+    "storage.read",
+    "storage.write"
+  ],
   "extensions": ["conversation.composer"],
-  "locales": { "zh-CN": { "name": "本地语音输入", "description": "按需安装 SenseVoice CPU 模型，离线识别并追加到输入框。" } },
+  "locales": {
+    "zh-CN": {
+      "name": "本地语音输入",
+      "description": "按需安装 SenseVoice CPU 模型，离线识别并追加到输入框。"
+    }
+  },
   "config": {
-    "modelSource": { "type": "enum", "title": "Model download source", "default": "huggingface.co", "options": ["huggingface.co", "hf-mirror.com"], "locales": { "zh-CN": { "title": "模型下载源" } } },
-    "pythonExecutable": { "type": "string", "title": "Python executable (3.10+)", "default": "python", "maxLength": 1000, "locales": { "zh-CN": { "title": "Python 可执行文件（3.10+）" } } },
-    "language": { "type": "enum", "title": "Recognition language", "default": "auto", "options": ["auto", "zh", "en", "yue", "ja", "ko"], "locales": { "zh-CN": { "title": "识别语言" } } },
-    "threads": { "type": "number", "title": "CPU threads", "default": 2, "minimum": 1, "maximum": 8, "locales": { "zh-CN": { "title": "CPU 线程数" } } }
+    "recognitionModel": {
+      "type": "enum",
+      "title": "Final recognition model",
+      "default": "sensevoice",
+      "options": ["sensevoice", "zipformer-small", "zipformer-bilingual"],
+      "description": "SenseVoice: multilingual final recognition. Zipformer small: lightweight Chinese. Zipformer bilingual: Chinese and English. Download only the selected models.",
+      "locales": {
+        "zh-CN": {
+          "title": "最终转写模型",
+          "description": "sensevoice：多语言完整转写；zipformer-small：轻量中文；zipformer-bilingual：中英双语。只下载所选模型。"
+        }
+      }
+    },
+    "realtime": {
+      "type": "boolean",
+      "title": "Live transcription",
+      "default": false,
+      "description": "Off by default for lower CPU and memory use. When off, inference starts only after stopping.",
+      "locales": {
+        "zh-CN": {
+          "title": "实时显示识别文字",
+          "description": "默认关闭以减少 CPU 和内存占用。关闭时只在停止录音后加载识别模型。"
+        }
+      }
+    },
+    "streamingModel": {
+      "type": "enum",
+      "title": "Live recognition model",
+      "default": "zipformer-small",
+      "options": ["zipformer-small", "zipformer-bilingual"],
+      "locales": {
+        "zh-CN": {
+          "title": "实时识别模型",
+          "description": "zipformer-small：轻量中文；zipformer-bilingual：中英双语，资源占用更高。仅开启实时识别时使用。"
+        }
+      }
+    },
+    "textCleanup": {
+      "type": "enum",
+      "title": "Text cleanup",
+      "default": "basic",
+      "options": ["none", "basic", "ollama"],
+      "description": "Basic: conservative spacing cleanup without another model. Ollama: optional installed local text model, no cloud API.",
+      "locales": {
+        "zh-CN": {
+          "title": "转写后文字整理",
+          "description": "none：关闭；basic：基础格式整理，无额外模型；ollama：使用已安装的本地文本模型整理语句，不调用云端 API。失败时保留原文。"
+        }
+      }
+    },
+    "cleanupModel": {
+      "type": "string",
+      "title": "Installed local Ollama model",
+      "default": "",
+      "maxLength": 200,
+      "description": "Used only for Ollama cleanup. Install Ollama and a local model separately. Cloud models are unavailable.",
+      "locales": {
+        "zh-CN": {
+          "title": "本地 Ollama 文本模型名称",
+          "description": "仅选择 ollama 整理时使用。需要自行安装 Ollama 和本地模型；不支持云端模型。"
+        }
+      }
+    },
+    "modelSource": {
+      "type": "enum",
+      "title": "Model download source",
+      "default": "huggingface.co",
+      "options": ["huggingface.co", "hf-mirror.com"],
+      "locales": { "zh-CN": { "title": "模型下载源" } }
+    },
+    "pythonExecutable": {
+      "type": "string",
+      "title": "Python executable (3.10+)",
+      "default": "python",
+      "maxLength": 1000,
+      "locales": { "zh-CN": { "title": "Python 可执行文件（3.10+）" } }
+    },
+    "language": {
+      "type": "enum",
+      "title": "Recognition language",
+      "default": "auto",
+      "options": ["auto", "zh", "en", "yue", "ja", "ko"],
+      "locales": { "zh-CN": { "title": "识别语言" } }
+    },
+    "threads": {
+      "type": "number",
+      "title": "CPU threads",
+      "default": 2,
+      "minimum": 1,
+      "maximum": 8,
+      "locales": { "zh-CN": { "title": "CPU 线程数" } }
+    }
   }
 }
