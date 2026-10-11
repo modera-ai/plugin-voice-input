@@ -114,5 +114,6 @@
       "maximum": 8,
       "locales": { "zh-CN": { "title": "CPU 线程数" } }
     }
-  }
+  },
+  "contributions": ["composer"]
 }
