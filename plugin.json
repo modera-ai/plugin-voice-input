@@ -2,7 +2,7 @@
   "apiVersion": 1,
   "id": "modera.voice-input",
   "name": "Local Voice Input",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Offline speech recognition with an on-demand SenseVoice CPU model.",
   "main": "dist/index.cjs",
   "category": "productivity",
